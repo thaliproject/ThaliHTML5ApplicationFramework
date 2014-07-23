@@ -4,6 +4,8 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "pouchdb": "latest"
+        "pouchdb": "latest",
+        "jquery": "latest",
+        "JavaScript-MD5": "latest"
     }
 }
