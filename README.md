@@ -41,3 +41,13 @@ The web build supports an NPM/Bower build.  The package.json and bower.json live
 To customize Android app metadata
 ---------------------------------
 /web/src/manifest.json and icon.png can be updated as needed to change application name or icon.
+
+Ports
+-----
+The ports are currently fixed.  
+
+The Relay is running on :58000
+The webserver runs on :58001
+
+You can run your HTML5 app elsewhere if helpful during development, as long as it looks for the relay/TDH at localhost:58000.
+
