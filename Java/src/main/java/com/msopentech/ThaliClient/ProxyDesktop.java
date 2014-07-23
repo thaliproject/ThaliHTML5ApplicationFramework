@@ -13,6 +13,10 @@ See the Apache 2 License for the specific language governing permissions and lim
 
 package com.msopentech.ThaliClient;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.msopentech.thali.CouchDBListener.HttpKeyTypes;
+import com.msopentech.thali.CouchDBListener.ThaliListener;
 import com.msopentech.thali.nanohttp.SimpleWebServer;
 import com.msopentech.thali.relay.RelayWebServer;
 import com.msopentech.thali.utilities.java.JavaEktorpCreateClientBuilder;
@@ -26,6 +30,7 @@ import java.nio.file.Path;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Properties;
 
 // TODO: Convert this to trivial swing app which goes to system tray
 // per http://docs.oracle.com/javase/tutorial/uiswing/misc/systemtray.html
@@ -80,26 +85,37 @@ public class ProxyDesktop  {
         host.stop();
     }
 
-    public void initialize() throws URISyntaxException, MalformedURLException {
+    public void initialize() throws URISyntaxException, IOException {
         // Initialize the relay
-        String filePath = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
-        File file = new File(filePath);
-        Path applicationPath = file.toPath();
-        Path webPath = applicationPath.getParent().getParent().resolve("web");
+        File executingDirectory = new File(System.getProperty("user.dir"));
+        File webDirectory = new File(executingDirectory, "web");
+        if (webDirectory.exists() == false && webDirectory.mkdirs() == false) {
+            throw new RuntimeException("Could not create directory to host application files.");
+        }
 
         // Useful for debugging
         // webPath = new File(new File(System.getProperty("user.dir")).getParent(), "web").toPath();
 
+        // This is sleezy, we should really have a function that gets us the httpkeys file and share that
+        // function with the Java TDH but I really don't want to put in a cross project dependency to share
+        // a few strings.
+        File httpKeysFileDirectory = new File(System.getProperty("user.home"), ".thaliTdh");
+        File httpKeysFile = new File(httpKeysFileDirectory, "httpkeys");
+        if (httpKeysFile.exists() == false) {
+            throw new RuntimeException("We can't find the httpkeys file! Someone start up the TDH!!!!");
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        HttpKeyTypes httpKeyTypes = mapper.readValue(httpKeysFile, HttpKeyTypes.class);
+
         try {
-            server = new RelayWebServer(new JavaEktorpCreateClientBuilder(), webPath.toFile());
+            server = new RelayWebServer(new JavaEktorpCreateClientBuilder(), webDirectory, httpKeyTypes);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // Initialize the local web server
-        File webRoot = webPath.toFile();
-        System.out.println("Setting web root to: " + webRoot);
-        host = new SimpleWebServer("localhost", localWebserverPort, webRoot, false);
+        System.out.println("Setting web root to: " + webDirectory.getAbsolutePath());
+        host = new SimpleWebServer("localhost", localWebserverPort, webDirectory, false);
 
         // Start both listeners
         try {
