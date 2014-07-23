@@ -1,0 +1,9 @@
+{
+    "name": "thali-application-seed",
+    "description": "Thali Application Seed",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "pouchdb": "latest"
+    }
+}
