@@ -36,3 +36,13 @@ applicationDistribution.from(webFiles) {
 
 installApp.dependsOn ':web:copyTemp'
 distZip.dependsOn ':web:copyTemp'
+
+// These tasks are needed to properly position the web directory when debugging, see README.md for details
+task deleteWeb(type:Delete, dependsOn: ':web:copyTemp') {
+    delete "build/web"
+}
+
+task copyWebForDebug(type: Copy, dependsOn: deleteWeb) {
+    from "../web/build/www"
+    into "build/web"
+}
