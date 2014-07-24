@@ -86,11 +86,12 @@ public class ProxyDesktop  {
     }
 
     public void initialize() throws URISyntaxException, IOException {
-        // Initialize the relay
-        File executingDirectory = new File(System.getProperty("user.dir"));
-        File webDirectory = new File(executingDirectory, "web");
-        if (webDirectory.exists() == false && webDirectory.mkdirs() == false) {
-            throw new RuntimeException("Could not create directory to host application files.");
+        // Initialize the relay - We find the root directory of the install and navigate down to the web directory
+        File rootDirectoryOfInstall = new File(getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
+        File webDirectory = rootDirectoryOfInstall.toPath().getParent().getParent().resolve("web").toFile();
+        if (webDirectory.exists() == false) {
+            throw new RuntimeException("Either the web directory wasn't installed or we have the wrong location or you are debugging AND DIDN'T READ THE README.md!!!!!!!! - " +
+            webDirectory.getAbsolutePath());
         }
 
         // Useful for debugging
@@ -110,7 +111,7 @@ public class ProxyDesktop  {
         try {
             server = new RelayWebServer(new JavaEktorpCreateClientBuilder(), webDirectory, httpKeyTypes);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("cannot start relay web server!", e);
         }
 
         // Initialize the local web server

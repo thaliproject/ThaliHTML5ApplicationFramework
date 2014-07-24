@@ -29,7 +29,13 @@ If the TDH is not already running, the application will crash.  To exit the appl
 
 To open in IntelliJ
 -------------------
-Import the root build.gradle file.  When prompted, choose to use custom gradle wrapper.  Leverage the Gradle Tasks view in IntelliJ to execute tasks.  Debug using the 'java->run' Gradle task.  Note that after debugging you may need to manually kill left over java processes not terminated in non-console execution modes.
+Import the root build.gradle file.  When prompted, choose to use custom gradle wrapper.  Leverage the Gradle Tasks view in IntelliJ to execute tasks.
+
+To make debugging work you need to get IntelliJ to run the copyWebForDebug gradle task or you won't have the right web files during your debug run. To fix this go to Run->Edit Configurations. Hit the green "+" and choose Gradle. Give the task a useful name like "copyWebForDebug". Hit the folder button next to "Gradle project" and choose ":java". In tasks type in "copyWebForDebug". Hit o.k. Now select the task from the task drop down on the right side of your IDE and make sure it runs.
+
+Now go back to Run->Edit Configurations, hit the green "+" and choose application. Give it a useful name like ProxyDesktop. Hit the "..." button by Main class and choose ProxyDesktop. Go to 'use classpath of module' and hit the dropdown and select Java. Look for the section that says "Before launch: Make" and hit the green arrow and choose "Run another Configuration" which will bring up a dialog which should list "copyWebForDebug', select it and hit o.k. Now hit o.k. on the main dialog to save and exit.
+
+Now go to the task drop down in the uypper left hand part of the IDE window and make sure it's set to ProxyDesktop and hit the bug. Now (assuming you remembered to start up a TDH) things should work.
 
 To add a website
 ----------------
