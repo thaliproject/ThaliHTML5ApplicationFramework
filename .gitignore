@@ -1,8 +1,8 @@
 .idea
 .gradle
-*.iml
-
 web
 out
 build
+
+*.iml
 com.msopentech.thali.name.keystore
