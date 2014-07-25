@@ -2,6 +2,7 @@
 .gradle
 *.iml
 
+web/**
 out
 build
 com.msopentech.thali.name.keystore
