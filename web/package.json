@@ -5,6 +5,7 @@
     "private": true,
     "Author" : "Ivan R. Judson",
     "dependencies" : {
-        "bower": "latest"
+        "bower": "latest",
+        "express" : "latest"
     }
 }
