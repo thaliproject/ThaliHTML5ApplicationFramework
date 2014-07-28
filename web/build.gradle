@@ -11,16 +11,12 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 See the Apache 2 License for the specific language governing permissions and limitations under the License.
 */
 
-<<<<<<< HEAD
 apply plugin: 'node'
 
-defaultTasks 'build'
-=======
 targetCompatibility = 1.6
 sourceCompatibility = 1.6
 
-apply plugin: 'node'
->>>>>>> parent of 1520cdd... Cleanup
+defaultTasks 'build'
 
 buildscript {
     repositories {
