@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "thali_client",
+=======
+  "name": "Your_Application_Name",
+>>>>>>> parent of 1520cdd... Cleanup
   "version": "0.0.0.1",
   "app": {
     "launch":{

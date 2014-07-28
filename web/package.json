@@ -1,11 +1,20 @@
 {
+<<<<<<< HEAD
     "name": "thali-address-book",
     "description": "Thali Addressbook Application",
+=======
+    "name": "thali-application-seed",
+    "description": "Thali Application Seed",
+>>>>>>> parent of 1520cdd... Cleanup
     "version": "0.0.1",
     "private": true,
     "Author" : "Ivan R. Judson",
     "dependencies" : {
+<<<<<<< HEAD
         "bower": "latest",
         "express" : "latest"
+=======
+        "bower": "latest"
+>>>>>>> parent of 1520cdd... Cleanup
     }
 }
