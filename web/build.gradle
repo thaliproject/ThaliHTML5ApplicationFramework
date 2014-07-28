@@ -1,0 +1,63 @@
+/*
+Copyright (c) Microsoft Open Technologies, Inc.
+All Rights Reserved
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache 2 License for the specific language governing permissions and limitations under the License.
+*/
+
+apply plugin: 'node'
+
+defaultTasks 'build'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.moowork.gradle:gradle-node-plugin:0.4'
+    }
+}
+
+/**
+ * Configuring node plugin to download, install and run entirely locally.
+ */
+node {
+    download = true
+}
+
+/**
+ * Delete all temporary items.
+ */
+task clean(type: Delete) {
+    delete 'build', 'node_modules', 'src/bower_components'
+}
+
+/**
+ * This installs bower dependencies for the local application.
+ */
+task bowerInstall(type: NodeTask, dependsOn: ['npmInstall']) {
+    script = file('node_modules/bower/bin/bower')
+    args = ['install']
+}
+
+/**
+ * Copy all the files needed for this application to the build directory.
+ */
+
+task build(type: Copy, dependsOn: ['bowerInstall']) {
+    into('build')
+    from fileTree(dir: projectDir.toString()+"/src")
+}
+
+/**
+ * Run the node server express pointed at the build directory for testing.
+ */
+task run(type: NodeTask, dependsOn: 'build') {
+    script = file("server.js")
+}
