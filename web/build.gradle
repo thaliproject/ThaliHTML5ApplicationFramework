@@ -39,7 +39,6 @@ node {
 }
 
 /**
-<<<<<<< HEAD
  * Delete all temporary items.
  */
 task clean(type: Delete) {
@@ -47,8 +46,6 @@ task clean(type: Delete) {
 }
 
 /**
-=======
->>>>>>> parent of 1520cdd... Cleanup
  * This installs bower dependencies for the local application.
  */
 task bowerInstall(type: NodeTask, dependsOn: ['npmInstall']) {
@@ -56,7 +53,6 @@ task bowerInstall(type: NodeTask, dependsOn: ['npmInstall']) {
     args = ['install']
 }
 
-<<<<<<< HEAD
 /**
  * Copy all the files needed for this application to the build directory.
  */
@@ -72,13 +68,3 @@ task build(type: Copy, dependsOn: ['bowerInstall']) {
 task run(type: NodeTask, dependsOn: 'build') {
     script = file("server.js")
 }
-=======
-task deleteTemp(type: Delete) {
-    delete fileTree(dir: 'build/www')
-}
-
-task copyTemp(type: Copy, dependsOn: ['bowerInstall', 'deleteTemp']) {
-    into('build/www')
-    from fileTree(dir: project(':web').projectDir.toString()+"/src", excludes: ["node_modules", "*.iml", "*.gradle"])
-}
->>>>>>> parent of 1520cdd... Cleanup
