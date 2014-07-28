@@ -40,7 +40,7 @@ Now go to the task drop down in the uypper left hand part of the IDE window and 
 To add a website
 ----------------
 Any HTML5 web application can be placed into 
->enlistment/web/src
+>web/src
 
 The web build supports an NPM/Bower build.  The package.json and bower.json live in /web.  During build time bower install will run and deposit bower files in /web/src/bower_components
 
