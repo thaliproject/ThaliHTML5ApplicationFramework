@@ -82,32 +82,59 @@ function addMoreDocs() {
     });
 }
 
+function get(url) {
+    // Return a new promise.
+    return new Promise(function(resolve, reject) {
+        // Do the usual XHR stuff
+        var req = new XMLHttpRequest();
+        req.open('GET', url);
+
+        req.onload = function() {
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+                // Resolve the promise with the response text
+                resolve(req.response);
+            }
+            else {
+                // Otherwise reject with the status text
+                // which will hopefully be a meaningful error
+                reject(Error(req.statusText));
+            }
+        };
+
+        // Handle network errors
+        req.onerror = function() {
+            reject(Error("Network Error"));
+        };
+
+        // Make the request
+        req.send();
+    });
+}
+
 $(function() {
     var docBag = generateDocs(100);
 
-    PouchDB.destroy(dbOne).then(function() {
-        return PouchDB.destroy(dbTwo);
+    var getHttpKeyUrl = "http://localhost:58000/_relayutility/localhttpkeys";
+    var httpKeyUrl;
+    get(getHttpKeyUrl).then(function(response) {
+        var data = JSON.parse(response);
+        httpKeyUrl = data['localMachineIPHttpKeyURL'];
     }).then(function() {
-        return PouchDB.destroy(dbThree);
-    }).then(function() {
-        return PouchDB.destroy(dbFour);
+        return PouchDB.destroy(dbOne);
     }).then(function() {
         var db1 = new PouchDB(dbOne);
         return db1.bulkDocs({docs: docBag});
     }).then(function() {
-        var db3 = new PouchDB(dbThree);
-        return db3.bulkDocs({docs: docBag});
-    }).then(function() {
         try {
-            PouchDBSync.addReplicationRequest(dbOne, dbTwo, 7, 10);
-            PouchDBSync.addReplicationRequest(dbThree, dbFour, 5, 12);
+            PouchDBSync.addReplicationRequest(dbOne, httpKeyUrl+dbThree, 5, 12, true);
             moreDocTimer = setTimeout(addMoreDocs, 4000);
 
             // set up timer to end test
             setTimeout(function() {
                 console.log("ending test");
-                PouchDBSync.removeReplicationRequest(dbOne, dbTwo);
-                PouchDBSync.removeReplicationRequest(dbThree, dbFour);
+                PouchDBSync.removeReplicationRequest(dbOne, httpKeyUrl+dbThree);
                 clearTimeout(moreDocTimer);
             }, testDuration * 1000);
         } catch(err) {
@@ -115,3 +142,4 @@ $(function() {
         }
     });
 });
+
