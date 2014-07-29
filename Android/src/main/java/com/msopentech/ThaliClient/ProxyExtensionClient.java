@@ -66,9 +66,18 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     private synchronized void initialize(HttpKeyTypes httpKeyTypes)
     {
         LOG.info("Inside initialize");
-        if (server != null && server.isAlive()) {
-            server.stop();
+        if (server != null) {
+            if (server.isAlive()) {
+                LOG.info("Server is alive so updated httpkeytypes");
+                server.setHttpKeyTypes(httpKeyTypes);
+                return;
+            } else {
+                // This is probably not necessary but one likes to be clean in these things
+                LOG.info("Stopping relay server in initialize because it wasn't alive before recreating");
+                server.stop();
+            }
         }
+
         LOG.info("Trying to initialize RelayWebServer");
         // Start the webserver
         try {
@@ -102,7 +111,6 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     public void onPause() {
         LOG.info("Called in onPause");
         context.unregisterReceiver(broadcastReceiver);
-        server.stop();
     }
 
     @Override
