@@ -20,6 +20,9 @@ exports = exports.PouchDBSync;
 // enable extra debug logging?
 var enableDebugLogging = true;
 
+// what is the relay address?
+var relayAddress = "http://localhost:58000"
+
 /**
  * Replication request:
  *  from - src of replication
@@ -27,6 +30,7 @@ var enableDebugLogging = true;
  *  frequency - period in seconds in which syncs are run
  *  count - total number of times to sync (< 0 indicates indefinitely)
  *  nextUpdate - what is the schedule for the next update (timestamp)
+ *  tdhToTdh - is this a call that will be handled by the Proxy?
  *
  * Key for request based off of hash of "from" and "to" concatenated
  * and lower case.
@@ -34,12 +38,13 @@ var enableDebugLogging = true;
 var replicationRequests = {};
 
 /* create a replication request object and compute the key. */
-function replicationRequest(from, to, frequency, count) {
+function replicationRequest(from, to, frequency, count, tdhToTdh) {
     var request = {
         from: from,
         to: to,
         frequency: frequency,
-        count: count
+        count: count,
+        tdhToTdh: tdhToTdh
     };
     var key = md5(from.trim().toLowerCase() +
         "::" +
@@ -56,12 +61,17 @@ function replicationRequest(from, to, frequency, count) {
  * @param to    destination of replication
  * @param frequency     period in seconds to perform the replication
  * @param count         number of times to sync (if <= 0, indicates indefinitely)
+ * @param tdhToTdh    Do we replicate between two TDHs instead of Pouch to TDH
  */
-function addReplicationRequest(from, to, frequency, count) {
+function addReplicationRequest(from, to, frequency, count, tdhToTdh) {
+    if(tdhToTdh === undefined) {
+        tdhToTdh = false;
+    }
+
     if (count <= 0) {
         count = -1;
     }
-    var request = replicationRequest(from, to, frequency, count);
+    var request = replicationRequest(from, to, frequency, count, tdhToTdh);
     var key = request.key;
 
     if ((key in replicationRequests) && (replicationRequests.hasOwnProperty(key))) {
@@ -88,6 +98,17 @@ function enableLogging(doit) {
     enableDebugLogging = doit;
 }
 exports.enableLogging = enableLogging;
+
+/**
+ * Set location of relay.
+ * @param relayAddress
+ */
+function setRelayAddress(address) {
+    if(relayAddress !== undefined && relayAddress != null) {
+        relayAddress = address;
+    }
+}
+exports.setRelayAddress = setRelayAddress;
 
 /**
  * Remove a replication request from the queue based on the source and destination
@@ -129,19 +150,23 @@ function requestsThatNeedProcessing(now) {
     // iterate over the timer queue and figure out which requests need to be replicated
     if(timerQueue != null && timerQueue.length > 0) {
         for(timeIdx in timerQueue) {
-            if(timeIdx <= now) {
-                timeSlots++;
-                if ((timerQueue[timeIdx] !== undefined) && (timerQueue[timeIdx] != null)) {
-                    for(var requestIdx in timerQueue[timeIdx]) {
-                        var requestKey = timerQueue[timeIdx][requestIdx];
-                        if((replicationRequests != null) && (replicationRequests[requestKey] !== undefined)) {
-                            requests[requests.length] = requestKey;
+            if (timerQueue.hasOwnProperty(timeIdx)) {
+                if (timeIdx <= now) {
+                    timeSlots++;
+                    if ((timerQueue[timeIdx] !== undefined) && (timerQueue[timeIdx] != null)) {
+                        for (var requestIdx in timerQueue[timeIdx]) {
+                            if(timerQueue[timeIdx].hasOwnProperty(requestIdx)) {
+                                var requestKey = timerQueue[timeIdx][requestIdx];
+                                if ((replicationRequests != null) && (replicationRequests[requestKey] !== undefined)) {
+                                    requests[requests.length] = requestKey;
+                                }
+                            }
                         }
                     }
+                    delete timerQueue[timeIdx];
+                } else {
+                    break;
                 }
-                delete timerQueue[timeIdx];
-            } else {
-                break;
             }
         }
     }
@@ -149,43 +174,84 @@ function requestsThatNeedProcessing(now) {
     return requests;
 }
 
+function getEmptyPromise() {
+    return new Promise(function(resolve, reject) {
+        resolve();
+    });
+}
+
+function scheduleNextReplication(request) {
+    var result = -1;
+    if ((request.count < 0) || (--request.count > 0)) {
+        // schedule the replication requests next iteration
+        scheduleReplicationRequest(request, false);
+        result = request.frequency;
+    } else {
+        // we are done with the request, we can delete it
+        if(enableDebugLogging) {
+            console.log("Replication complete for: " + JSON.stringify(request));
+        }
+        delete replicationRequests[requestKey];
+    }
+    return result;
+}
+
 /**
  * Creates the promise that performs the actual replication request for a particular key.
  * @param requestKey
  */
-function processReplicationRequestPromise(requestKey) {
-    function scheduleNextReplication() {
-        var result = -1;
-        if ((request.count < 0) || (--request.count > 0)) {
-            // schedule the replication requests next iteration
-            scheduleReplicationRequest(request, false);
-            result = request.frequency;
-        } else {
-            // we are done with the request, we can delete it
-            if(enableDebugLogging) {
-                console.log("Replication complete for: " + JSON.stringify(request));
-            }
-            delete replicationRequests[requestKey];
-        }
-        return result;
-    }
-
+function processPouchToTDHReplicationRequestPromise(requestKey) {
+    var promise;
     var request = ((requestKey in replicationRequests) ? replicationRequests[requestKey] : null);
     if(request == null) {
-        return new Promise(function (resolve, reject) {
-            resolve();
-        });
+        promise = getEmptyPromise();
     } else {
         var fromDb, toDb;
         fromDb = new PouchDB(request.from);
         toDb = new PouchDB(request.to);
-        return fromDb.replicate.to(toDb, { create_target: true, server: false }).then(function() {
-            return scheduleNextReplication();
+        promise = fromDb.replicate.to(toDb, { create_target: true, server: false }).then(function() {
+            return scheduleNextReplication(request);
         }, function(err) {
             console.log("Error occured during replication: " + err + " -- for request: " + JSON.string(request));
-            return scheduleNextReplication();
+            return scheduleNextReplication(request);
         });
     }
+    return promise;
+}
+
+function processTdhToTdhReplicationRequestPromise(requestKey) {
+    var promise;
+    var request = ((requestKey in replicationRequests) ? replicationRequests[requestKey] : null);
+    if(request == null) {
+        promise = getEmptyPromise();
+    } else {
+        promise = new Promise(function (resolve, reject) {
+            var url = relayAddress + "/_replicate";
+            var body = {
+                'source': request.from,
+                'target': request.to,
+                'create_target': true
+            };
+
+            var req = new XMLHttpRequest();
+            req.open('POST', url);
+            req.setRequestHeader("Content-Type", "application/json");
+            req.setRequestHeader("Accept", "application/json, text/plain");
+            req.onload = function() {
+                // check the status
+                if(req.status != 200) {
+                    console.log("Request failed.  Status: " + req.status + ", Replication request: " + request.from + " --> " + request.to);
+                }
+                resolve(scheduleNextReplication(request));
+            };
+            req.onerror = function() {
+                console.log("There was a network area.  Replication request: " + request.from + " --> " + request.to);
+                resolve(scheduleNextReplication(request));
+            };
+            req.send(JSON.stringify(body));
+        });
+    }
+    return promise;
 }
 
 /**
@@ -246,34 +312,59 @@ function figureNextUpdate(now, updateTimes) {
     }
 }
 
+function determineProperPromise(requestKey) {
+    var promise = null;
+    if(requestKey in replicationRequests) {
+        var request = replicationRequests[requestKey];
+        if(request.tdhToTdh) {
+            promise = processTdhToTdhReplicationRequestPromise;
+        } else {
+            promise = processPouchToTDHReplicationRequestPromise;
+        }
+    }
+    return promise;
+}
+
 /**
  * Timer handler that determines the replication requests to perform and does so.
  */
 function timerHandler() {
     var now = Math.floor(Date.now() / 1000);
+    var promise;
 
     // determine requests to process
     var requestsToProcess = requestsThatNeedProcessing(now);
 
-    //
+    // determine if we have a single or multiple requests to process
     if(requestsToProcess.length == 1) {
-        processReplicationRequestPromise(requestsToProcess[0]).then(function(updateTime) {
-            figureNextUpdate(now, updateTime);
-        }, function(err) {
-            console.log("Processing of single request failed: " + err)
-        });
+        promise = determineProperPromise(requestsToProcess[0]);
+        if(promise != null) {
+            promise(requestsToProcess[0]).then(function (updateTime) {
+                figureNextUpdate(now, updateTime);
+            }, function (err) {
+                console.log("Processing of single request failed: " + err)
+            });
+        } else {
+            figureNextUpdate(now, -1);
+        }
     } else {
         // process requests
         var requestPromises = [];
         for(var idx in requestsToProcess) {
-            requestPromises.push(processReplicationRequestPromise(requestsToProcess[idx]));
+            promise = determineProperPromise(requestsToProcess[idx]);
+            if(promise != null) {
+                requestPromises.push(promise(requestsToProcess[idx]));
+            }
         }
-
-        Promise.all(requestPromises).then(function(updateTimes) {
-            figureNextUpdate(now, updateTimes);
-        }, function(err) {
-            console.log("Processing of multiple requests failed: " + err)
-        });
+        if(requestPromises.length > 0) {
+            Promise.all(requestPromises).then(function (updateTimes) {
+                figureNextUpdate(now, updateTimes);
+            }, function (err) {
+                console.log("Processing of multiple requests failed: " + err)
+            });
+        } else {
+            figureNextUpdate(now, -1);
+        }
     }
 }
 
