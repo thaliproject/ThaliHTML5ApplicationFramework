@@ -23,7 +23,7 @@ var enableDebugLogging = true;
 // what is the relay address?
 var relayAddress = "http://localhost:58000"
 
-function processTdhReplicationRequestPromise(source, target, frequency, count, isCancel) {
+function processTdhReplicationRequestPromise(source, target, isCancel) {
     if(isCancel === undefined) {
         isCanel = false;
     }
@@ -35,8 +35,6 @@ function processTdhReplicationRequestPromise(source, target, frequency, count, i
             'target': target,
             'create_target': true,
             'managed_replication': true,
-            'replication_frequency': frequency,
-            'replication_count': count,
             'cancel': isCancel
         };
 
@@ -60,13 +58,13 @@ function processTdhReplicationRequestPromise(source, target, frequency, count, i
     return promise;
 }
 
-function addTdhReplicationRequest(from, to, frequency, count) {
-    return processTdhReplicationRequestPromise(from, to, frequency, count, false);
+function addTdhReplicationRequest(from, to) {
+    return processTdhReplicationRequestPromise(from, to, false);
 }
 exports.addTdhReplicationRequest = addTdhReplicationRequest;
 
 function removeTdhReplicationRequest(from, to) {
-    return processTdhReplicationRequestPromise(from, to, 0, 0, true);
+    return processTdhReplicationRequestPromise(from, to, true);
 }
 exports.removeTdhReplicationRequest = removeTdhReplicationRequest;
 

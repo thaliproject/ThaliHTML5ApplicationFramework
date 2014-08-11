@@ -4,10 +4,20 @@
     </head>
 
     <body>
-        <h1>Running some pouch tests</h1>
-        <div id="output"></div>
+        <h1>Running some replication tests</h1>
+        <div>Documents are created as follows:
+        <ul>
+            <li>Documents created written to --> Pouch (testdbone)</li>
+            <li>Pouch (testdbone) replicates to --> TDH (testdbtwo) using Pouch -> local TDH routines in pouch_sync.js</li>
+            <li>TDH (testdbtwo) --> TDH (testdbthree) using TDH -> TDH routines in pouch_sync.js</li>
+            <li>TDH (testdbthree) --> TDH (testdbfour) using ReplicationManager</li>
+        </ul>
+        </div>
+        <div>testdbone doc count: <div id="dbone_output"></div>
+        <div>testdbfour doc count: <div id="dbfour_output"></div>
+        <div id="finish_output"></div>
 
-	<script src="../bower_components/pouchdb/dist/pouchdb-nightly.js"></script>
+	    <script src="../bower_components/pouchdb/dist/pouchdb-nightly.js"></script>
         <script src="../bower_components/jquery/dist/jquery.min.js"></script>
         <script src="../bower_components/JavaScript-MD5/js/md5.js"></script>
         <script src="../js/pouchdb_sync.js"></script>

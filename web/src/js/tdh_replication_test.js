@@ -74,7 +74,7 @@ var dbFour = testDb4Name;
 var dbFourCouch = localCouchInstance + "/" + testDb4Name;
 var moreDocTimer;
 var checkDocCountTimer;
-var testDuration = 300; // seconds
+var testDuration = 60; // seconds
 
 function addMoreDocs() {
     var docBag = generateDocs(random(1,100));
@@ -85,19 +85,27 @@ function addMoreDocs() {
         var db2 = PouchDB(dbThree);
         return db.bulkDocs({docs: docBag});
     }).then(function() {
-        moreDocTimer = setTimeout(addMoreDocs, 4000);
+        moreDocTimer = setTimeout(addMoreDocs, 3000);
     });
 }
 
 function checkDocCount() {
-    var db = new PouchDB(dbFourCouch);
-    db.allDocs({include_docs: false}, function(err, response) {
+    var db4 = new PouchDB(dbFourCouch);
+    db4.allDocs({include_docs: false}, function(err, response) {
         if(err != null) {
-            console.log("error getting doc count");
+            $("#dbfour_output").html("error getting doc count");
         } else {
-            console.log("doc count: " + response["total_rows"]);
+            $("#dbfour_output").html(response["total_rows"]);
         }
-        checkDocCountTimer = setTimeout(checkDocCount, 5000);
+        var db1 = new PouchDB(dbOne);
+        db1.allDocs({include_docs: false}, function(err, response) {
+            if(err != null) {
+                $("#dbone_output").html("error getting doc count");
+            } else {
+                $("#dbone_output").html(response["total_rows"]);
+            }
+            checkDocCountTimer = setTimeout(checkDocCount, 2000);
+        });
     });
 }
 
@@ -146,22 +154,23 @@ $(function() {
         var db1 = new PouchDB(dbOne);
         return db1.bulkDocs({docs: docBag});
     }).then(function() {
-        PouchDBSync.addReplicationRequest(dbOne, dbTwoCouch, 30, 20, false);
+        PouchDBSync.addReplicationRequest(dbOne, dbTwoCouch, 5, -1, false);
     }).then(function() {
-        PouchDBSync.addReplicationRequest(dbTwo, httpKeyUrl + dbThree, 35, 30, true);
+        PouchDBSync.addReplicationRequest(dbTwo, httpKeyUrl + dbThree, 5, -1, true);
     }).then(function() {
-        TDHReplication.addTdhReplicationRequest(dbThree, httpKeyUrl+dbFour, 5, 12);
+        TDHReplication.addTdhReplicationRequest(dbThree, httpKeyUrl+dbFour);
     }).then(function() {
         moreDocTimer = setTimeout(addMoreDocs, 4000);
         checkDocCountTimer = setTimeout(checkDocCount, 5000);
 
         // set up timer to end test
         setTimeout(function() {
-            console.log("ending test");
+            $('#finish_output').html("Test done.");
             PouchDBSync.removeReplicationRequest(dbOne, dbTwoCouch);
             PouchDBSync.removeReplicationRequest(dbOne, httpKeyUrl + dbThree);
             TDHReplication.removeTdhReplicationRequest(dbThree, httpKeyUrl+dbFour);
             clearTimeout(moreDocTimer);
+            clearTimeout(checkDocCountTimer);
         }, testDuration * 1000);
     });
 });
