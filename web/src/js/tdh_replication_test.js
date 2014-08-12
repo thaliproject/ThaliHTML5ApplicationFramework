@@ -18,7 +18,7 @@ var localCouchInstance = "http://localhost:58000";
 var testDb1Name = "testdbone";
 var testDb2Name = "testdbtwo";
 var testDb3Name = "testdbthree";
-var testDb4Name = "testdbfoure";
+var testDb4Name = "testdbfour";
 
 // random constants
 var stringFiller = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -65,47 +65,159 @@ function generateDocs(count) {
 }
 
 var dbOne = testDb1Name;
-var dbOneCouch = localCouchInstance + "/" + testDb1Name;
 var dbTwo = testDb2Name;
 var dbTwoCouch = localCouchInstance + "/" + testDb2Name;
 var dbThree = testDb3Name;
-var dbThreeCouch = localCouchInstance + "/" + testDb3Name;
 var dbFour = testDb4Name;
 var dbFourCouch = localCouchInstance + "/" + testDb4Name;
-var moreDocTimer;
-var checkDocCountTimer;
-var testDuration = 60; // seconds
+var httpKeyUrl; // store the local hhtpkey url
 
-function addMoreDocs() {
-    var docBag = generateDocs(random(1,100));
-    var db = new PouchDB(dbOne);
-    db.bulkDocs({docs: docBag}).then(function() {
-        console.log("added: " + docBag.length);
-    }).then(function() {
-        var db2 = PouchDB(dbThree);
-        return db.bulkDocs({docs: docBag});
-    }).then(function() {
-        moreDocTimer = setTimeout(addMoreDocs, 3000);
+var testDuration = 60; // seconds
+var moreDocTimerTimeout = 3; // seconds
+var moreDocTimerIterations = testDuration / moreDocTimerTimeout;
+var syncDuration = 60; // seconds -- sync time allowed is padding after no more docs are added
+var checkDocTimerDuration = 1; // seconds
+
+var checkDocCountTimer;
+var moreDocTimer;
+var syncTimer = null;
+var finishupTimer = null;
+
+// get db counts, hand them to the callback
+function checkSync(callback) {
+    var db4 = new PouchDB(dbFourCouch);
+    var db4Count;
+    var db1Count;
+    db4.allDocs({include_docs: false}, function(err, response) {
+        if (err) {
+            db4Count = -1;
+        } else {
+            db4Count = response["total_rows"];
+        }
+        var db1 = new PouchDB(dbOne);
+        db1.allDocs({include_docs: false}, function (err, response) {
+            if (err != null) {
+                db1Count = -1;
+            } else {
+                db1Count = response["total_rows"];
+            }
+
+            if (callback) {
+                callback(db1Count, db4Count);
+            }
+        });
     });
 }
 
+function addMoreDocs() {
+    moreDocTimerIterations--;
+    if(moreDocTimerIterations > 0) {
+        var docBag = generateDocs(random(1, 100));
+        var db = new PouchDB(dbOne);
+        db.bulkDocs({docs: docBag}).then(function () {
+            console.log("added: " + docBag.length);
+        }).then(function () {
+            var db2 = PouchDB(dbThree);
+            return db.bulkDocs({docs: docBag});
+        }).then(function () {
+            moreDocTimer = setTimeout(addMoreDocs, moreDocTimerTimeout * 1000);
+        });
+    } else {
+        moreDocTimer = null;
+        syncTimer = setTimeout(function() {
+            if(checkDocCountTimer != null) {
+                clearTimeout(checkDocCountTimer);
+            }
+            checkSync(function(db1Count, db4Count) {
+                if(db1Count != db4Count) {
+                    $('#finish_output').html("Test completed -- all docs did not sync.");
+                } else {
+                    verifyDocs();
+                }
+            });
+        }, syncDuration * 1000);
+    }
+}
+
 function checkDocCount() {
-    var db4 = new PouchDB(dbFourCouch);
-    db4.allDocs({include_docs: false}, function(err, response) {
-        if(err != null) {
+    checkSync(function (db1Count, db4Count) {
+        if (db1Count < 0) {
+            $("#dbone_output").html("error getting doc count");
+        } else {
+            $("#dbone_output").html(db1Count);
+        }
+        if (db4Count < 0) {
             $("#dbfour_output").html("error getting doc count");
         } else {
-            $("#dbfour_output").html(response["total_rows"]);
+            $("#dbfour_output").html(db4Count);
         }
-        var db1 = new PouchDB(dbOne);
-        db1.allDocs({include_docs: false}, function(err, response) {
-            if(err != null) {
-                $("#dbone_output").html("error getting doc count");
-            } else {
-                $("#dbone_output").html(response["total_rows"]);
-            }
-            checkDocCountTimer = setTimeout(checkDocCount, 2000);
-        });
+
+        if ((syncTimer != null) && (db1Count == db4Count)) {
+            clearTimeout(syncTimer);
+            syncTimer = null;
+            verifyDocs();
+        } else {
+            checkDocCountTimer = setTimeout(checkDocCount, checkDocTimerDuration * 1000);
+        }
+    });
+}
+
+function isDocPresent(doc, docList) {
+    for(var i = 0; i < docList.length; i++) {
+        if((docList[i]["_id"] == doc["_id"]) && (docList[i]["_rev"] == doc["_rev"])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function verifyDocs() {
+    // disable replications
+    PouchDBSync.removeReplicationRequest(dbOne, dbTwoCouch);
+    PouchDBSync.removeReplicationRequest(dbTwo, httpKeyUrl + dbThree);
+    TDHReplication.removeTdhReplicationRequest(dbThree, httpKeyUrl + dbFour);
+
+    // clear timers
+    if(moreDocTimer != null) {
+        clearTimeout(moreDocTimer);
+    }
+    if(syncTimer != null) {
+        clearTimeout(syncTimer);
+    }
+    if(checkDocCountTimer != null) {
+        clearTimeout(checkDocCountTimer)
+    }
+    moreDocTimer = syncTimer = checkDocCountTimer = null;
+
+    // let's check the docs!
+    var db4 = new PouchDB(dbFourCouch);
+    db4.allDocs({include_docs: false}, function(err, response) {
+        if (err) {
+            $('#finish_output').html("Test completed with error -- unable to get count of docs from db4.");
+        } else {
+            var db4Docs = response["rows"];
+            var db1 = new PouchDB(dbOne);
+            db1.allDocs({include_docs: false}, function (err, response) {
+                if (err != null) {
+                    $('#finish_output').html("Test completed with error -- unable to get count of docs from db1.");
+                } else {
+                    var db1Docs = response["rows"];
+                    if (db4Docs.length == db1Docs.length) {
+                        for (var i = 0; i < db1Docs.length; i++) {
+                            if(!isDocPresent(db1Docs[i], db4Docs)) {
+                                $('#finish_output').html("Test completed with error -- document mismatch.");
+                                break;
+                            }
+                        }
+                        if(i == db1Docs.length) {
+                            $('#finish_output').html("Test completed successfully.");
+                        }
+                    } else {
+                        $('#finish_output').html("Test completed with error -- unequal number of documents between db1 and db4.");
+                    }
+                }
+            });
+        }
     });
 }
 
@@ -140,37 +252,50 @@ function get(url) {
     });
 }
 
+var state = "none";
 $(function() {
-    var docBag = generateDocs(100);
-
-    var getHttpKeyUrl = "http://localhost:58000/_relayutility/localhttpkeys";
-    var httpKeyUrl;
-    get(getHttpKeyUrl).then(function(response) {
-        var data = JSON.parse(response);
-        httpKeyUrl = data['localMachineIPHttpKeyURL'];
-    }).then(function() {
-        return PouchDB.destroy(dbOne);
-    }).then(function() {
-        var db1 = new PouchDB(dbOne);
-        return db1.bulkDocs({docs: docBag});
-    }).then(function() {
-        PouchDBSync.addReplicationRequest(dbOne, dbTwoCouch, 5, -1, false);
-    }).then(function() {
-        PouchDBSync.addReplicationRequest(dbTwo, httpKeyUrl + dbThree, 5, -1, true);
-    }).then(function() {
-        TDHReplication.addTdhReplicationRequest(dbThree, httpKeyUrl+dbFour);
-    }).then(function() {
-        moreDocTimer = setTimeout(addMoreDocs, 4000);
-        checkDocCountTimer = setTimeout(checkDocCount, 5000);
-
-        // set up timer to end test
-        setTimeout(function() {
-            $('#finish_output').html("Test done.");
-            PouchDBSync.removeReplicationRequest(dbOne, dbTwoCouch);
-            PouchDBSync.removeReplicationRequest(dbOne, httpKeyUrl + dbThree);
-            TDHReplication.removeTdhReplicationRequest(dbThree, httpKeyUrl+dbFour);
-            clearTimeout(moreDocTimer);
-            clearTimeout(checkDocCountTimer);
-        }, testDuration * 1000);
+    $("#start_test").click(function() {
+        var getHttpKeyUrl = "http://localhost:58000/_relayutility/localhttpkeys";
+        state = "get http key";
+        get(getHttpKeyUrl).then(function (response) {
+            var data = JSON.parse(response);
+            httpKeyUrl = data['localMachineIPHttpKeyURL'];
+            state = "got http key";
+        }).then(function () {
+            state = "clear db1";
+            return PouchDB.destroy(dbOne);
+        }).then(function () {
+            state = "clear db2";
+            return PouchDB.destroy(dbTwo);
+        }).then(function () {
+            state = "clear db3";
+            return PouchDB.destroy(dbThree);
+        }).then(function () {
+            state = "clear db4";
+            return PouchDB.destroy(dbFour);
+        }).then(function () {
+            state = "add docs to db1";
+            var docBag = generateDocs(100);
+            var db1 = new PouchDB(dbOne);
+            return db1.bulkDocs({docs: docBag});
+        }).then(function () {
+            state = "add db1 -> db2 pouch replication";
+            PouchDBSync.addReplicationRequest(dbOne, dbTwoCouch, 3, -1, false);
+        }).then(function () {
+            state = "add db2 -> db3 pouch tdh replication";
+            PouchDBSync.addReplicationRequest(dbTwo, httpKeyUrl + dbThree, 5, -1, true);
+        }).then(function () {
+            state = "add db3 -> db4 replication manager";
+            TDHReplication.addTdhReplicationRequest(dbThree, httpKeyUrl + dbFour);
+        }).then(function () {
+            state = "set timers";
+            moreDocTimer = setTimeout(addMoreDocs, moreDocTimerTimeout * 1000);
+            checkDocCountTimer = setTimeout(checkDocCount, checkDocTimerDuration * 1000);
+            state = "done";
+        }).then(function () {
+            $("#test_setup_output").html("Test setup succeeded");
+        }).catch(function(error) {
+            $("#test_setup_output").html("Test setup failed at state: " + state + ", error: " + e);
+        });
     });
 });
