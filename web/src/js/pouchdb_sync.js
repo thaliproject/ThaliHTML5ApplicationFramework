@@ -421,8 +421,8 @@ var scheduleReplicationRequest = function(request, updateTimer) {
  * @param request
  */
 function unscheduleReplicationRequest(request) {
-    if(request.key in replicationRequest) {
-        delete replicationRequest[request.key];
+    if(request.key in replicationRequests) {
+        delete replicationRequests[request.key];
     }
 }
 
