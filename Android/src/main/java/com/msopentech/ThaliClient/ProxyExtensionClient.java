@@ -31,6 +31,7 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     // in a dependency just to get two strings so I copied them over.
     public static final String HttpKeysNotification = "com.msopentech.thali.devicehub.android.httpkeys";
     public static final String LocalMachineIPHttpKeyURLName = "LocalMachineIPHttpKeyURL";
+    public static final String OnionHttpKeyURLName = "OnionHttpKeyURLName";
     public static final String TDHClassName = "com.msopentech.thali.devicehub.android.ThaliDeviceHubService";
 
     private static final Logger LOG = LoggerFactory.getLogger(ProxyExtensionClient.class);
@@ -43,7 +44,10 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
         public void onReceive(Context context, Intent intent) {
             LOG.info("In onReceive on the broadcastReceiver in ProxyExtensionClient");
             Bundle bundle = intent.getExtras();
-            final HttpKeyTypes httpKeyTypes = new HttpKeyTypes(new HttpKeyURL(bundle.getString(LocalMachineIPHttpKeyURLName)));
+            final HttpKeyTypes httpKeyTypes =
+                    new HttpKeyTypes(
+                            new HttpKeyURL(bundle.getString(LocalMachineIPHttpKeyURLName)),
+                            new HttpKeyURL(bundle.getString(OnionHttpKeyURLName)));
             // I explicitly didn't use an AsyncTask for this because the Android docs say that an AsyncTask
             // should only take a few seconds at most and starting a network port can take awhile.
             new Thread(new Runnable() {

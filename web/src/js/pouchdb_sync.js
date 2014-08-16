@@ -271,13 +271,10 @@ function processPouchToTDHReplicationRequestPromise(requestKey) {
     if(request == null) {
         promise = getEmptyPromise();
     } else {
-        var fromDb, toDb;
-        fromDb = new PouchDB(request.from);
-        toDb = new PouchDB(request.to);
-        promise = fromDb.replicate.to(toDb, { create_target: true, server: false }).then(function() {
+        promise = PouchDB.replicate(request.from, request.to, { create_target: true, server: false }).then(function() {
             return scheduleNextReplication(request);
         }, function(err) {
-            console.log("Error occured during replication: " + err + " -- for request: " + JSON.string(request));
+            console.log("Error occurred during replication: " + err + " -- for request: " + JSON.string(request));
             return scheduleNextReplication(request);
         });
     }

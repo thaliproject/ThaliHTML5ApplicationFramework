@@ -68,14 +68,16 @@ var dbOne = testDb1Name;
 var dbTwo = testDb2Name;
 var dbTwoCouch = localCouchInstance + "/" + testDb2Name;
 var dbThree = testDb3Name;
+var dbThreeCouch = localCouchInstance + "/" + testDb3Name;
 var dbFour = testDb4Name;
 var dbFourCouch = localCouchInstance + "/" + testDb4Name;
-var httpKeyUrl; // store the local hhtpkey url
+var localHttpKeyUrl; // store the HTTPKEY URL with a local address
+var publicHttpKeyUrl; // store the HTTPKEY URL with an onion address
 
 var testDuration = 60; // seconds
 var moreDocTimerTimeout = 3; // seconds
 var moreDocTimerIterations = testDuration / moreDocTimerTimeout;
-var syncDuration = 60; // seconds -- sync time allowed is padding after no more docs are added
+var syncDuration = 120; // seconds -- sync time allowed is padding after no more docs are added
 var checkDocTimerDuration = 1; // seconds
 
 var checkDocCountTimer;
@@ -117,7 +119,6 @@ function addMoreDocs() {
         db.bulkDocs({docs: docBag}).then(function () {
             console.log("added: " + docBag.length);
         }).then(function () {
-            var db2 = PouchDB(dbThree);
             return db.bulkDocs({docs: docBag});
         }).then(function () {
             moreDocTimer = setTimeout(addMoreDocs, moreDocTimerTimeout * 1000);
@@ -174,8 +175,8 @@ function isDocPresent(doc, docList) {
 function verifyDocs() {
     // disable replications
     PouchDBSync.removeReplicationRequest(dbOne, dbTwoCouch);
-    PouchDBSync.removeReplicationRequest(dbTwo, httpKeyUrl + dbThree);
-    TDHReplication.removeTdhReplicationRequest(dbThree, httpKeyUrl + dbFour);
+    PouchDBSync.removeReplicationRequest(dbTwo, localHttpKeyUrl + dbThree);
+    TDHReplication.removeTdhReplicationRequest(dbThree, publicHttpKeyUrl + dbFour);
 
     // clear timers
     if(moreDocTimer != null) {
@@ -259,20 +260,24 @@ $(function() {
         state = "get http key";
         get(getHttpKeyUrl).then(function (response) {
             var data = JSON.parse(response);
-            httpKeyUrl = data['localMachineIPHttpKeyURL'];
+            localHttpKeyUrl = data['localMachineIPHttpKeyURL'];
+            publicHttpKeyUrl = data['onionHttpKeyURL'];
             state = "got http key";
         }).then(function () {
             state = "clear db1";
             return PouchDB.destroy(dbOne);
         }).then(function () {
             state = "clear db2";
-            return PouchDB.destroy(dbTwo);
+            return PouchDB.destroy(dbTwoCouch);
         }).then(function () {
             state = "clear db3";
-            return PouchDB.destroy(dbThree);
+            return PouchDB.destroy(dbThreeCouch);
         }).then(function () {
             state = "clear db4";
-            return PouchDB.destroy(dbFour);
+            return PouchDB.destroy(dbFourCouch);
+        }).then(function() {
+            // Clean up the TDH
+            TDHReplication.removeTdhReplicationRequest(dbThree, publicHttpKeyUrl + dbFour);
         }).then(function () {
             state = "add docs to db1";
             var docBag = generateDocs(100);
@@ -283,10 +288,10 @@ $(function() {
             PouchDBSync.addReplicationRequest(dbOne, dbTwoCouch, 3, -1, false);
         }).then(function () {
             state = "add db2 -> db3 pouch tdh replication";
-            PouchDBSync.addReplicationRequest(dbTwo, httpKeyUrl + dbThree, 5, -1, true);
+            PouchDBSync.addReplicationRequest(dbTwo, localHttpKeyUrl + dbThree, 5, -1, true);
         }).then(function () {
             state = "add db3 -> db4 replication manager";
-            TDHReplication.addTdhReplicationRequest(dbThree, httpKeyUrl + dbFour);
+            TDHReplication.addTdhReplicationRequest(dbThree, publicHttpKeyUrl + dbFour);
         }).then(function () {
             state = "set timers";
             moreDocTimer = setTimeout(addMoreDocs, moreDocTimerTimeout * 1000);

@@ -21,11 +21,11 @@ exports = exports.TDHReplication;
 var enableDebugLogging = true;
 
 // what is the relay address?
-var relayAddress = "http://localhost:58000"
+var relayAddress = "http://localhost:58000";
 
 function processTdhReplicationRequestPromise(source, target, isCancel) {
     if(isCancel === undefined) {
-        isCanel = false;
+        isCancel = false;
     }
 
     var promise = new Promise(function (resolve, reject) {

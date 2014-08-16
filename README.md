@@ -35,7 +35,7 @@ To make debugging work you need to get IntelliJ to run the copyWebForDebug gradl
 
 Now go back to Run->Edit Configurations, hit the green "+" and choose application. Give it a useful name like ProxyDesktop. Hit the "..." button by Main class and choose ProxyDesktop. Go to 'use classpath of module' and hit the dropdown and select Java. Look for the section that says "Before launch: Make" and hit the green arrow and choose "Run another Configuration" which will bring up a dialog which should list "copyWebForDebug', select it and hit o.k. Now hit o.k. on the main dialog to save and exit.
 
-Now go to the task drop down in the uypper left hand part of the IDE window and make sure it's set to ProxyDesktop and hit the bug. Now (assuming you remembered to start up a TDH) things should work.
+Now go to the task drop down in the upper left hand part of the IDE window and make sure it's set to ProxyDesktop and hit the bug. Now (assuming you remembered to start up a TDH) things should work.
 
 To add a website
 ----------------
