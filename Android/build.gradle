@@ -51,7 +51,7 @@ task packageApk(type:Exec, dependsOn: ['dist', 'copyDepToLib', ':web:build']) {
 
     workingDir working
 
-    commandLine "python", "make_apk.py", "--manifest=$manifest", "--extensions=$extensions"
+    commandLine "python", "make_apk.py", "--enable-remote-debugging", "--manifest=$manifest", "--extensions=$extensions"
 }
 
 task buildApk(type: Copy, dependsOn: packageApk) {

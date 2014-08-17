@@ -77,7 +77,7 @@ var publicHttpKeyUrl; // store the HTTPKEY URL with an onion address
 var testDuration = 60; // seconds
 var moreDocTimerTimeout = 3; // seconds
 var moreDocTimerIterations = testDuration / moreDocTimerTimeout;
-var syncDuration = 120; // seconds -- sync time allowed is padding after no more docs are added
+var syncDuration = 600; // seconds -- sync time allowed is padding after no more docs are added
 var checkDocTimerDuration = 1; // seconds
 
 var checkDocCountTimer;
