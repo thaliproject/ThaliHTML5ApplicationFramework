@@ -44,7 +44,11 @@ public class ProxyDesktop  {
     public static void main(String[] rgs) throws InterruptedException, URISyntaxException, IOException {
 
         final ProxyDesktop instance = new ProxyDesktop();
-        instance.initialize();
+        try {
+            instance.initialize();
+        } catch(RuntimeException e) {
+            System.out.println(e);
+        }
 
         // Attempt to launch the default browser to our page
         if(Desktop.isDesktopSupported())
@@ -88,10 +92,12 @@ public class ProxyDesktop  {
     public void initialize() throws URISyntaxException, IOException {
         // Initialize the relay - We find the root directory of the install and navigate down to the web directory
         File rootDirectoryOfInstall = new File(getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
-        File webDirectory = rootDirectoryOfInstall.toPath().getParent().getParent().resolve("web").toFile();
+        String webPath = "web"; // For production
+        //String webPath = "install/Java/web"; // For debugging from inside of intelliJ
+        File webDirectory = rootDirectoryOfInstall.toPath().getParent().getParent().resolve(webPath).toFile();
         if (webDirectory.exists() == false) {
             throw new RuntimeException("Either the web directory wasn't installed or we have the wrong location or you are debugging AND DIDN'T READ THE README.md!!!!!!!! - " +
-            webDirectory.getAbsolutePath());
+                webDirectory.getAbsolutePath());
         }
 
         // Useful for debugging

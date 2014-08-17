@@ -11,16 +11,15 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 See the Apache 2 License for the specific language governing permissions and limitations under the License.
 */
 
- package com.msopentech.ThaliClient;
+package com.msopentech.ThaliClient;
 
 import android.content.*;
 import android.os.Bundle;
+import android.util.Log;
 import com.msopentech.ThaliAndroidClientUtilities.AndroidEktorpCreateClientBuilder;
 import com.msopentech.thali.CouchDBListener.HttpKeyTypes;
 import com.msopentech.thali.relay.RelayWebServer;
 import com.msopentech.thali.utilities.universal.HttpKeyURL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xwalk.app.runtime.extension.XWalkExtensionClient;
 import org.xwalk.app.runtime.extension.XWalkExtensionContextClient;
 
@@ -33,8 +32,12 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     public static final String LocalMachineIPHttpKeyURLName = "LocalMachineIPHttpKeyURL";
     public static final String OnionHttpKeyURLName = "OnionHttpKeyURLName";
     public static final String TDHClassName = "com.msopentech.thali.devicehub.android.ThaliDeviceHubService";
+    // I had to use native Android logging rather than SLF4J logging because right now there isn't a good way to
+    // include AARs in our crosswalk build. When we flip to using the CrossWalk webview then this problem will
+    // hopefully go away and we can use SLF4J again.
+    // https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/18
+    public static final String LogTag = "com.msopentech.thali.ThaliClient.android";
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProxyExtensionClient.class);
     private volatile ContentResolver resolver;
     private volatile Context context;
     private volatile RelayWebServer server;
@@ -42,7 +45,7 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            LOG.info("In onReceive on the broadcastReceiver in ProxyExtensionClient");
+            Log.i(LogTag,"In onReceive on the broadcastReceiver in ProxyExtensionClient");
             Bundle bundle = intent.getExtras();
             final HttpKeyTypes httpKeyTypes =
                     new HttpKeyTypes(
@@ -61,7 +64,7 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
 
     public ProxyExtensionClient(String name, String jsApiContent, XWalkExtensionContextClient xwalkContext) {
         super(name, jsApiContent, xwalkContext);
-        LOG.info("Entered ProxyExtensionClient");
+        Log.i(LogTag,"Entered ProxyExtensionClient");
         this.resolver = xwalkContext.getContext().getContentResolver();
         this.context = xwalkContext.getContext();
 //        new RelayTask().execute(xwalkContext.getContext());
@@ -69,36 +72,36 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
 
     private synchronized void initialize(HttpKeyTypes httpKeyTypes)
     {
-        LOG.info("Inside initialize");
+        Log.i(LogTag,"Inside initialize");
         if (server != null) {
             if (server.isAlive()) {
-                LOG.info("Server is alive so updated httpkeytypes");
+                Log.i(LogTag,"Server is alive so updated httpkeytypes");
                 server.setHttpKeyTypes(httpKeyTypes);
                 return;
             } else {
                 // This is probably not necessary but one likes to be clean in these things
-                LOG.info("Stopping relay server in initialize because it wasn't alive before recreating");
+                Log.i(LogTag,"Stopping relay server in initialize because it wasn't alive before recreating");
                 server.stop();
             }
         }
 
-        LOG.info("Trying to initialize RelayWebServer");
+        Log.i(LogTag,"Trying to initialize RelayWebServer");
         // Start the webserver
         try {
             server = new RelayWebServer(
                     new AndroidEktorpCreateClientBuilder(),
                     context.getDir("keystore", Context.MODE_PRIVATE), httpKeyTypes);
         } catch (Exception e) {
-            LOG.error("Could not created RelayWebServer!", e);
+            Log.e(LogTag,"Could not created RelayWebServer!", e);
             return;
         }
 
         try {
             server.start();
         } catch(IOException ioe) {
-            LOG.error("Could not start RelayWebServer!", ioe);
+            Log.e(LogTag,"Could not start RelayWebServer!", ioe);
         }
-        LOG.info("RelayWebServer seems to have started.");
+        Log.i(LogTag,"RelayWebServer seems to have started.");
     }
 
     // Stop the server
@@ -113,7 +116,7 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
 
     @Override
     public void onPause() {
-        LOG.info("Called in onPause");
+        Log.i(LogTag,"Called in onPause");
         context.unregisterReceiver(broadcastReceiver);
     }
 
@@ -121,11 +124,11 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     public void onResume() {
         // This should wake up the TDH if it's not already awake and get it to send a broadcast intent
         // with the local address.
-        LOG.info("Called in onResume");
+        Log.i(LogTag,"Called in onResume");
         context.registerReceiver(broadcastReceiver, new IntentFilter(HttpKeysNotification));
         Intent startTDHIntent = new Intent(TDHClassName);
         context.startService(startTDHIntent);
-        LOG.info("Finished onResume");
+        Log.i(LogTag,"Finished onResume");
     }
 //    private class RelayTask extends AsyncTask<Context, Void, Void> {
 //        private Context context;

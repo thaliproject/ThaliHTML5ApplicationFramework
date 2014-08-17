@@ -20,6 +20,13 @@ import org.ektorp.android.http.AndroidHttpClient;
 import java.net.Proxy;
 import java.security.*;
 
+/**
+ * This is an exact copy of the AndroidEktorpCreateClientBuilder class from Android Utilities but there is no
+ * sane way (outside of using reflection) to get an AAR dependency into a crosswalk extension. Since this is
+ * the only code we currently need we just copied it over. But once we start using the crosswalk view control
+ * then we should be able to use the AAR dependency and get rid of this.
+ * https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/18
+ */
 public class AndroidEktorpCreateClientBuilder extends CreateClientBuilder {
     @Override
     public org.ektorp.http.HttpClient CreateEktorpClient(String host, int port, PublicKey serverPublicKey,
