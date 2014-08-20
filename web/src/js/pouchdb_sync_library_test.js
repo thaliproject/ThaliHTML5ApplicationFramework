@@ -14,7 +14,7 @@
 "use strict";
 
 // TDH and db information
-var localCouchInstance = "http://localhost:58000";
+var localCouchInstance = TDHReplication.relayAddress;
 var testDb1Name = "testdbone";
 var testDb2Name = "testdbtwo";
 
@@ -116,7 +116,7 @@ function get(url) {
 $(function() {
     var docBag = generateDocs(100);
 
-    var getHttpKeyUrl = "http://localhost:58000/_relayutility/localhttpkeys";
+    var getHttpKeyUrl = TDHReplication.relayAddress+"/_relayutility/localhttpkeys";
     var httpKeyUrl;
     get(getHttpKeyUrl).then(function(response) {
         var data = JSON.parse(response);

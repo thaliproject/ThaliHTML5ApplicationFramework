@@ -11,10 +11,12 @@
  See the Apache 2 License for the specific language governing permissions and limitations under the License.
  */
 
+(function(exports){
+
 "use strict";
 
 // TDH and db information
-var localCouchInstance = "http://localhost:58000";
+var localCouchInstance = TDHReplication.relayAddress;
 var testDb1Name = "testdbone";
 var testDb2Name = "testdbtwo";
 var testDb3Name = "testdbthree";
@@ -256,7 +258,7 @@ function get(url) {
 var state = "none";
 $(function() {
     $("#start_test").click(function() {
-        var getHttpKeyUrl = "http://localhost:58000/_relayutility/localhttpkeys";
+        var getHttpKeyUrl = TDHReplication.relayAddress + "/_relayutility/localhttpkeys";
         state = "get http key";
         get(getHttpKeyUrl).then(function (response) {
             var data = JSON.parse(response);
@@ -304,3 +306,5 @@ $(function() {
         });
     });
 });
+
+})(typeof exports === 'undefined' ? this : exports);

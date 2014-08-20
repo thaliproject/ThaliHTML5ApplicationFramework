@@ -36,6 +36,10 @@ import java.util.Properties;
 // per http://docs.oracle.com/javase/tutorial/uiswing/misc/systemtray.html
 
 public class ProxyDesktop  {
+    // Host and port for the relay
+    // These go away with https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/4
+    public static final String relayHost = "127.0.0.1";
+    public static final int relayPort = 58000;
     private static final int localWebserverPort = 58001;
 
     public RelayWebServer server;
@@ -115,7 +119,8 @@ public class ProxyDesktop  {
         HttpKeyTypes httpKeyTypes = mapper.readValue(httpKeysFile, HttpKeyTypes.class);
 
         try {
-            server = new RelayWebServer(new JavaEktorpCreateClientBuilder(), webDirectory, httpKeyTypes);
+            server = new RelayWebServer(new JavaEktorpCreateClientBuilder(), webDirectory, httpKeyTypes, relayHost,
+                    relayPort);
         } catch (Exception e) {
             throw new RuntimeException("cannot start relay web server!", e);
         }
@@ -129,7 +134,7 @@ public class ProxyDesktop  {
             System.out.println("Starting WebServer at http://localhost:" + localWebserverPort);
             host.start();
 
-            System.out.println("Starting Relay on http://" + RelayWebServer.relayHost + ":" + RelayWebServer.relayPort);
+            System.out.println("Starting Relay on http://" + relayHost + ":" + relayPort);
             server.start();
         } catch(IOException ioe) {
             System.out.println("Exception: " + ioe.toString());

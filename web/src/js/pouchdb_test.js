@@ -14,7 +14,7 @@
 "use strict";
 
 // TDH and db information
-var localCouchInstance = "http://localhost:58000";
+var localCouchInstance = TDHReplication.relayAddress;
 var testDb1Name = "testdbone";
 var testDb2Name = "testdbtwo";
 
