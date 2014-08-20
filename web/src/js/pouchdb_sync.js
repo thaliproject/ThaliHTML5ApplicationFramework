@@ -20,71 +20,6 @@ exports = exports.PouchDBSync;
 // enable extra debug logging?
 var enableDebugLogging = true;
 
-// what is the relay address?
-var relayAddress = "http://localhost:58000";
-
-/**
- * This is a very fragile temporary function to let the address book grab a httpKey and shove it into
- * the key database.
- * @param httpKey
- */
-var addHttpKeyToPermissionDatabase = function(httpKey) {
-    var rsakeytype = "rsapublickey";
-    var keyDatabaseName = "thaliprincipaldatabase";
-    /*
-     new PouchDB(request.from);
-     Take HTTPKEYURL from foreign point, parse it to get out the public key parts and then put those into the
-
-     keydatabase
-
-     The document in keybase has four fields
-     id - Exactly the value out of the httpkeyurl
-     keyType - "RSAKeyType"
-     modulus -
-     exponent -
-
-     Parsing HTTPKEYURL - httpkey://domain/publickey/stuff
-     So do a split on "/" and we know the public key starts at 3 (check in JS obviously)
-     The publickey will be of the form: "rsapublickey:" + Exponent + "." + modulus
-     Then do a starts with rsapublickey: check and then substring to remove it
-     Then split on "." and you are good to go!
-
-     Will return a JSON object of the form
-     { id: x,
-     requestBody: y }
-
-     Using Pouch we want to avoid a conflict so we will first do a get to get the current revision
-     So easiest is just to do a get, grab the rev if any and then use it on the put.
-
-     */
-    var rsaPublicKeyString = httpKey.split("/")[3];
-    // We don't do a -1 on rsakeytype.length because we want to eat the ":" separator
-    var rsaPublicKeySplit = rsaPublicKeyString.substr(rsakeytype.length).split(".");
-    var publicKeyDoc = {};
-    publicKeyDoc.keyType = rsakeytype;
-    publicKeyDoc.exponent = rsaPublicKeySplit[0];
-    publicKeyDoc.modulus = rsaPublicKeySplit[1];
-    // Yes, we use the same string as the record ID
-    var recordId = rsaPublicKeyString;
-
-    var keyDatabasePouch = new PouchDB(relayAddress + "/" + keyDatabaseName);
-    keyDatabasePouch.get(recordId).then(
-        function(doc) {
-            return Promise.resolve();
-        },
-        function(err) {
-            keyDatabasePouch.put(publicKeyDoc, recordId).then(
-                function(response) {
-                    return Promise.resolve();
-                }, function(err) {
-                    return Promise.reject(err);
-                }
-            );
-        });
-};
-
-exports.addHttpKeyToPermissionDatabase = addHttpKeyToPermissionDatabase;
-
 /**
  * Replication request:
  *  from - src of replication
@@ -160,17 +95,6 @@ function enableLogging(doit) {
     enableDebugLogging = doit;
 }
 exports.enableLogging = enableLogging;
-
-    /**
-     * Set location of relay.
-     * @param address
-     */
-function setRelayAddress(address) {
-    if(relayAddress !== undefined && relayAddress != null) {
-        relayAddress = address;
-    }
-}
-exports.setRelayAddress = setRelayAddress;
 
 /**
  * Remove a replication request from the queue based on the source and destination
@@ -285,7 +209,7 @@ function processTdhToTdhReplicationRequestPromise(requestKey) {
         promise = getEmptyPromise();
     } else {
         promise = new Promise(function (resolve, reject) {
-            var url = relayAddress + "/_replicate";
+            var url = TDHReplication.relayAddress + "/_replicate";
             var body = {
                 'source': request.from,
                 'target': request.to,

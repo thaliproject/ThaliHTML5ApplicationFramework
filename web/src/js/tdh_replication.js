@@ -21,7 +21,9 @@ exports = exports.TDHReplication;
 var enableDebugLogging = true;
 
 // what is the relay address?
+// This goes away with https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/4
 var relayAddress = "http://localhost:58000";
+exports.relayAddress = relayAddress;
 
 function processTdhReplicationRequestPromise(source, target, isCancel) {
     if(isCancel === undefined) {
@@ -29,7 +31,7 @@ function processTdhReplicationRequestPromise(source, target, isCancel) {
     }
 
     var promise = new Promise(function (resolve, reject) {
-        var url = relayAddress + "/_replicate";
+        var url = exports.relayAddress + "/_replicate";
         var body = {
             'source': source,
             'target': target,
@@ -67,6 +69,5 @@ function removeTdhReplicationRequest(from, to) {
     return processTdhReplicationRequestPromise(from, to, true);
 }
 exports.removeTdhReplicationRequest = removeTdhReplicationRequest;
-
 
 })(typeof exports === 'undefined' ? this : exports);

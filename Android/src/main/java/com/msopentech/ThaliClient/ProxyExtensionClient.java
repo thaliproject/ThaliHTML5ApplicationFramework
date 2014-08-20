@@ -31,12 +31,17 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
     public static final String HttpKeysNotification = "com.msopentech.thali.devicehub.android.httpkeys";
     public static final String LocalMachineIPHttpKeyURLName = "LocalMachineIPHttpKeyURL";
     public static final String OnionHttpKeyURLName = "OnionHttpKeyURLName";
+    public static final String SocksOnionProxyPort = "SocksOnionProxyPort";
     public static final String TDHClassName = "com.msopentech.thali.devicehub.android.ThaliDeviceHubService";
     // I had to use native Android logging rather than SLF4J logging because right now there isn't a good way to
     // include AARs in our crosswalk build. When we flip to using the CrossWalk webview then this problem will
     // hopefully go away and we can use SLF4J again.
     // https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/18
     public static final String LogTag = "com.msopentech.thali.ThaliClient.android";
+    // Host and port for the relay
+    // These go away with https://github.com/thaliproject/ThaliHTML5ApplicationFramework/issues/4
+    public static final String relayHost = "127.0.0.1";
+    public static final int relayPort = 58000;
 
     private volatile ContentResolver resolver;
     private volatile Context context;
@@ -50,7 +55,8 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
             final HttpKeyTypes httpKeyTypes =
                     new HttpKeyTypes(
                             new HttpKeyURL(bundle.getString(LocalMachineIPHttpKeyURLName)),
-                            new HttpKeyURL(bundle.getString(OnionHttpKeyURLName)));
+                            new HttpKeyURL(bundle.getString(OnionHttpKeyURLName)),
+                            Integer.parseInt(bundle.getString(SocksOnionProxyPort)));
             // I explicitly didn't use an AsyncTask for this because the Android docs say that an AsyncTask
             // should only take a few seconds at most and starting a network port can take awhile.
             new Thread(new Runnable() {
@@ -90,7 +96,7 @@ public class ProxyExtensionClient extends XWalkExtensionClient {
         try {
             server = new RelayWebServer(
                     new AndroidEktorpCreateClientBuilder(),
-                    context.getDir("keystore", Context.MODE_PRIVATE), httpKeyTypes);
+                    context.getDir("keystore", Context.MODE_PRIVATE), httpKeyTypes, relayHost, relayPort);
         } catch (Exception e) {
             Log.e(LogTag,"Could not created RelayWebServer!", e);
             return;
