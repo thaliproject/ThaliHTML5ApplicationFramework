@@ -192,12 +192,13 @@ function processPouchToTDHReplicationRequestPromise(requestKey) {
     if(request == null) {
         promise = getEmptyPromise();
     } else {
-        promise = PouchDB.replicate(request.from, request.to, { create_target: true, server: false }).then(function() {
-            return scheduleNextReplication(request);
-        }, function(err) {
-            console.log("Error occurred during replication: " + err + " -- for request: " + JSON.string(request));
-            return scheduleNextReplication(request);
-        });
+        promise = PouchDB.replicate(request.from, request.to, { create_target: true, server: false })
+            .then(function() {
+                return scheduleNextReplication(request);
+                }, function(err) {
+                    console.log("Error occurred during replication: " + err + " -- for request: " + JSON.string(request));
+                    return scheduleNextReplication(request);
+                });
     }
     return promise;
 }
@@ -249,13 +250,13 @@ function figureNextUpdate(now, updateTimes) {
         updateTimes = [updateTimes];
     }
 
-    // if there are quests pending in the timer queue, determine how many seconds from now that is
+    // if there are requests pending in the timer queue, determine how many seconds from now that is
     var nextTimerTrigger = (function() { for(var i in timerQueue) { return i; } })();
     if(nextTimerTrigger !== undefined) {
         nextTimerTrigger -= now;
     }
 
-    // for the requests completed, determine if any need to be rescueduled, and the earliest time required
+    // for the requests completed, determine if any need to be rescheduled, and the earliest time required
     var nextRequestUpdateTime;
     updateTimes.forEach(function(updateTime) {
         if(updateTime > 0) {
@@ -343,7 +344,8 @@ function timerHandler() {
             Promise.all(requestPromises).then(function (updateTimes) {
                 figureNextUpdate(now, updateTimes);
             }, function (err) {
-                console.log("Processing of multiple requests failed: " + err)
+                console.log("Processing of multiple requests failed: " + err);
+                figureNextUpdate(now, -1);
             });
         } else {
             figureNextUpdate(now, -1);
