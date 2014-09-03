@@ -95,7 +95,7 @@ function getHttpKeys() {
 /**
  * In Java we start the relay before the web browser is loaded but in Android the web browser starts before
  * the relay is started. When we switch to using the XWalk web view this problem will largely go away but
- * until then we need a way to tell if the relay is started. Otherwise all of our requests will fail.
+ * until then we need a way to tell if the relay and TDH are started. Otherwise all of our requests will fail.
  * @returns {Promise}
  */
 function waitForRelayToStart() {
