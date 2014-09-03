@@ -55,7 +55,10 @@ task bowerInstall(type: NodeTask, dependsOn: ['npmInstall']) {
 
 task build(type: Copy, dependsOn: ['bowerInstall']) {
     into('build')
-    from fileTree(dir: projectDir.toString()+"/src")
+    from(projectDir.toString()+"/src") {
+        exclude '**/*.jar' // Bower includes PouchDB which includes the 34 meg Selenium jar that's only needed for testing PouchDB,
+                            // We never use it.
+    }
 }
 
 /**
