@@ -196,7 +196,7 @@ function processPouchToTDHReplicationRequestPromise(requestKey) {
             .then(function() {
                 return scheduleNextReplication(request);
                 }, function(err) {
-                    console.log("Error occurred during replication: " + err + " -- for request: " + JSON.string(request));
+                    console.log("Error occurred during replication: " + err + " -- for request: " + JSON.stringify(request));
                     return scheduleNextReplication(request);
                 });
     }
@@ -345,7 +345,6 @@ function timerHandler() {
                 figureNextUpdate(now, updateTimes);
             }, function (err) {
                 console.log("Processing of multiple requests failed: " + err);
-                figureNextUpdate(now, -1);
             });
         } else {
             figureNextUpdate(now, -1);
