@@ -15,8 +15,17 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'maven'
 
+// Naming our jar 'Java' (from the parent directory) is not a healthy idea. We already had a case insensitive
+// conflict with another Jar. So our fix is to rename it to something useful.
+jar.baseName 'YourApplicationName'
+
+// We prefix the script with 'start' to make the bat file used to start the application clearer.
+startScripts.applicationName "start" + jar.baseName
+
 targetCompatibility = 1.6
 sourceCompatibility = 1.6
+
+version = System.getProperty('MAVEN_UPLOAD_VERSION')
 
 dependencies {
     compile "com.msopentech.thali:ThaliUtilitiesJava:" + System.getProperty('MAVEN_UPLOAD_VERSION')
@@ -34,6 +43,7 @@ applicationDistribution.from(webFiles) {
 
 installApp.dependsOn ':web:build'
 distZip.dependsOn ':web:build'
+distZip.baseName jar.baseName
 
 // These tasks are needed to properly position the web directory when debugging, see README.md for details
 task deleteWeb(type:Delete, dependsOn: ':web:build') {
@@ -43,4 +53,31 @@ task deleteWeb(type:Delete, dependsOn: ':web:build') {
 task copyWebForDebug(type: Copy, dependsOn: deleteWeb) {
     from "../web/build"
     into "build/web"
+}
+
+def tempOutputDir = file("${buildDir}/unpacked/dist")
+
+task deleteOldUnzip(type:Delete, dependsOn: distZip) {
+    delete tempOutputDir
+}
+
+task unzipDistZip(type: Copy, dependsOn: deleteOldUnzip) {
+    def zipFile = file(distZip.archivePath)
+    from zipTree(zipFile)
+    into tempOutputDir
+}
+
+task deleteOldZip(type: Delete, dependsOn: unzipDistZip) {
+    delete distZip.archivePath
+}
+
+def unzipDirectoryRoot = file(tempOutputDir.path + "/" +
+        distZip.archiveName.substring(0, distZip.archiveName.length() - 1 - distZip.extension.length()))
+
+// The distZip file contains an extra directory at the root with the same name as the zip file. I'm sure
+// there is some switch to make it not do that but I haven't found it. So instead I unzip the file, move
+// it's contents and then re-zip but skip that extra directory.
+task skipLevelZip(type: Zip, dependsOn: deleteOldZip) {
+    from unzipDirectoryRoot
+    baseName distZip.baseName
 }

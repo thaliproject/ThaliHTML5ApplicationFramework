@@ -28,7 +28,7 @@ dependencies {
 }
 
 task cleanXwalkLib(type: Delete) {
-    delete fileTree(dir: 'src/lib', excludes: ['**crosswalk**', '**/android*.jar'] )
+    delete fileTree(dir: 'src/lib')
 }
 
 // Prep depdencies but manually exclude bits that don't belong in the JAR

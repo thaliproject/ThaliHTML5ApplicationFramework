@@ -1,6 +1,6 @@
 {
-  "name": "Your_Application_Name",
-  "version": "0.0.0.1",
+  "name": "Your Application Name",
+  "version": "0.0.0",
   "app": {
     "launch":{
       "local_path": "index.html"

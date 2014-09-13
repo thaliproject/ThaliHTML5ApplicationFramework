@@ -34,5 +34,5 @@ task buildAll {
 
 buildAll.dependsOn ':web:build'
 buildAll.dependsOn ':Java:installApp'
-buildAll.dependsOn ':Java:distZip'
+buildAll.dependsOn ':Java:skipLevelZip'
 buildAll.dependsOn ':Android:buildApk'
