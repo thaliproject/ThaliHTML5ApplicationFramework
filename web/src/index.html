@@ -1,10 +1,18 @@
 <!doctype html>
 <html>
     <head>
+        <link rel="stylesheet" type="text/css" href="bower_components/bootstrap/dist/css/bootstrap.min.css" />
+
+        <link rel="stylesheet" type="text/css" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css" />
+
         <!-- These script tags are needed by all Thali applications -->
+
         <script src="bower_components/pouchdb/dist/pouchdb-nightly.js"></script>
         <script src="bower_components/jquery/dist/jquery.min.js"></script>
         <script src="bower_components/JavaScript-MD5/js/md5.js"></script>
+        <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <script src="bower_components/moment/moment.js"></script>
+
         <script src="js/tdh_replication.js"></script>
         <script src="js/pouchdb_sync.js"></script>
 
@@ -14,14 +22,15 @@
     </head>
 
     <body>
+    <!--
         <h1>Running some replication tests</h1>
-        <div><button id="start_test">Start Test</button></div>
+        <div><button id="start_test" class="btn btn-default">Start Test</button></div>
         <div>Documents are created as follows:
         <ul>
-            <li>Documents created written to --> Pouch (testdbone)</li>
-            <li>Pouch (testdbone) replicates to --> TDH (testdbtwo) using Pouch -> local TDH routines in pouch_sync.js</li>
-            <li>TDH (testdbtwo) --> TDH (testdbthree) using TDH -> TDH routines in pouch_sync.js</li>
-            <li>TDH (testdbthree) --> TDH (testdbfour) using ReplicationManager</li>
+            <li>Documents created written to -> Pouch (testdbone)</li>
+            <li>Pouch (testdbone) replicates to -> TDH (testdbtwo) using Pouch -> local TDH routines in pouch_sync.js</li>
+            <li>TDH (testdbtwo) -> TDH (testdbthree) using TDH -> TDH routines in pouch_sync.js</li>
+            <li>TDH (testdbthree) -> TDH (testdbfour) using ReplicationManager</li>
         </ul>
         </div>
         <div>testdbone doc count: <div id="dbone_output"></div></div>
@@ -29,13 +38,38 @@
         <div id="test_setup_output"></div>
         <div id="finish_output"></div>
 
-        <button onclick="window.deleteDatabaseContents('replicationdb')">Delete replication database contents</button>
-        <button onclick="window.deleteDatabaseContents('addressbook')">Delete address book database contents</button>
+        <button class="btn btn-default" onclick="window.deleteDatabaseContents('replicationdb')">Delete replication database contents</button>
+        <button class="btn btn-default" onclick="window.deleteDatabaseContents('addressbook')">Delete address book database contents</button>
+    -->
+        <h2>Peer to Peer Chat</h2>
 
         <div id="im_wrapper" style="display:none">
             <div id="im_display"></div>
-            <input id="im_message" placeholder="Enter message here" style="width:80%" type="text"/>
-            <button onclick="window.postIm()">POST</button>
+
+            <table>
+                <tr>
+                    <td width="20%">
+                        <input id="name" placeholder="Your Name" class="form-control pull-right" />
+                    </td>
+                    <td width="80%">
+                        <input id="im_message" placeholder="Your Message" class="form-control" type="text" />
+                    </td>
+                    <td>
+                        <input type="button" onclick="window.postIm()" class="btn btn-default" value="SEND">
+                        </input>
+                    </td>
+                </tr>
+            </table>
+
         </div>
+
+    <!--
+        <ul>
+            <li ng-repeat="message in messages">
+                {{message.text}}
+            </li>
+        </ul>
+    -->
+
     </body>
 </html>

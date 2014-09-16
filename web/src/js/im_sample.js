@@ -10,6 +10,7 @@
 
  See the Apache 2 License for the specific language governing permissions and limitations under the License.
  */
+
 var chatPouchName = "chat";
 var chatGroupUrl;
 var localTdhChatHttpKeyUrl;
@@ -18,15 +19,21 @@ var messageWindowId = "im_display";
 var wrapperId = "im_wrapper";
 
 function postMessageToUx(message) {
+    if (!message.ts) message.ts = new Date();
+    if (!message.name) message.name = "anonymous";
+
     var p = document.createElement("P");
-    var textNode = document.createTextNode(message);
+
+    var timestampString = moment(message.ts).format("MM/DD/YYYY hh:mm:ss");
+
+    var textNode = document.createTextNode(timestampString + ": " + message.name + ": " + message.message);
     p.appendChild(textNode);
     document.getElementById(messageWindowId).appendChild(p);
 }
 
 var imPouch = new PouchDB(chatPouchName);
 var chatChanges = imPouch.changes({ since: "now", live: true, include_docs: true}).on('create', function(resp) {
-    postMessageToUx(resp.doc.message);
+    postMessageToUx(resp.doc);
 });
 
 TDHReplication.waitForRelayToStart()
@@ -51,7 +58,7 @@ TDHReplication.waitForRelayToStart()
     .then(function(allDocsResponse) {
         var rows = allDocsResponse.rows;
         for(var rowIndex in rows) {
-            postMessageToUx(rows[rowIndex].doc.message);
+            postMessageToUx(rows[rowIndex].doc);
         }
     });
 
@@ -66,8 +73,14 @@ window.onbeforeunload = function() {
 
 window.postIm = function() {
     var message = {};
+
+    message.ts = new Date();
+    message.name = document.getElementById("name").value;
     message.message = document.getElementById(inputId).value;
+
     imPouch.post(message);
+
+    document.getElementById(inputId).value = "";
 };
 
 window.deleteDatabaseContents = function(dbName) {
@@ -81,8 +94,7 @@ window.deleteDatabaseContents = function(dbName) {
                        console.log("Delete failed due to: " + error);
                    })
             }
-        })
-        .catch(function(error) {
+        }).catch(function(error) {
             console.log("Database alldocs request failed due to: " + error);
-        })
+        });
 };

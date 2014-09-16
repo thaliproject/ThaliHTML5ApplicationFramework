@@ -4,8 +4,10 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "pouchdb": "2.2.3",
+        "bootstrap": "latest",
+        "moment": "latest",
+        "JavaScript-MD5": "latest",
         "jquery": "latest",
-        "JavaScript-MD5": "latest"
+        "pouchdb": "2.2.3"
     }
 }
